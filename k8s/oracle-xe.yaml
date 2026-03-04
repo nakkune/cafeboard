@@ -1,0 +1,121 @@
+# Oracle Database XE (묣료 버전) - Kubernetes 배포
+# 최대 2GB RAM, 12GB 데이터 제한 (개발/학습용으로 충분)
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oracle
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oracle-secret
+  namespace: oracle
+type: Opaque
+stringData:
+  ORACLE_PASSWORD: "Oracle123"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oracle-data
+  namespace: oracle
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi  # Oracle XE 최소 15GB 필요
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-xe
+  namespace: oracle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle-xe
+  template:
+    metadata:
+      labels:
+        app: oracle-xe
+    spec:
+      containers:
+      - name: oracle
+        image: container-registry.oracle.com/database/express:21.3.0-xe
+        env:
+        - name: ORACLE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: oracle-secret
+              key: ORACLE_PASSWORD
+        ports:
+        - containerPort: 1521
+          name: oracle
+        - containerPort: 5500
+          name: oem
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"  # 시작 시 더 많은 메모리 필요
+            cpu: "2000m"
+        volumeMounts:
+        - name: data
+          mountPath: /opt/oracle/oradata
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "echo 'SELECT 1 FROM DUAL;' | sqlplus -s / as sysdba | grep -q '1'"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "echo 'SELECT 1 FROM DUAL;' | sqlplus -s / as sysdba | grep -q '1'"
+          initialDelaySeconds: 120
+          periodSeconds: 60
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: oracle-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-xe
+  namespace: oracle
+spec:
+  selector:
+    app: oracle-xe
+  ports:
+  - name: oracle
+    port: 1521
+    targetPort: 1521
+  - name: oem
+    port: 5500
+    targetPort: 5500
+  type: ClusterIP
+---
+# 외부 접근을 위한 NodePort (선택사항)
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-xe-nodeport
+  namespace: oracle
+spec:
+  selector:
+    app: oracle-xe
+  ports:
+  - name: oracle
+    port: 1521
+    targetPort: 1521
+    nodePort: 31521
+  type: NodePort

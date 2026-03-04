@@ -1,0 +1,88 @@
+name: CI/CD Pipeline (Safe Mode)
+
+on:
+  # push:
+  #   branches: [main, develop]
+  # pull_request:
+  #   branches: [main]
+  workflow_dispatch: # GitHub 상에서 직접 'Run workflow' 버튼을 누를 때만 실행됩니다.
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  ci-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: backend
+        continue-on-error: true
+
+      - name: Run linter
+        run: npm run lint
+        working-directory: backend
+        continue-on-error: true
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: backend
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test
+        working-directory: backend
+        continue-on-error: true
+
+  ci-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+        continue-on-error: true
+
+      - name: Run linter
+        run: npm run lint
+        working-directory: frontend
+        continue-on-error: true
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: frontend
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+        continue-on-error: true
+
+  # CD 배포 단계는 실제 서버 설정(Secrets 등)이 완료된 후 필요할 때 주석을 해제하여 사용하세요.
+  # cd-deploy:
+  #   needs: [ci-backend, ci-frontend]
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   ...
+

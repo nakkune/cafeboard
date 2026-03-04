@@ -1,0 +1,649 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int            @id @default(autoincrement())
+  email           String         @unique @db.VarChar(255)
+  passwordHash    String         @map("password_hash") @db.VarChar(255)
+  nickname        String         @db.VarChar(50)
+  name            String?        @db.VarChar(100)
+  phone           String?        @db.VarChar(20)
+  gender          String?        @map("gender") @db.VarChar(10)
+  profileImage    String?        @map("profile_image") @db.VarChar(500)
+  bio             String?        @db.Text
+  role            Role           @default(member)
+  memberStatus    MemberStatus   @default(pending) @map("member_status")
+  memberLevel    MemberLevel   @default(general) @map("member_level")
+  approvedAt      DateTime?      @map("approved_at")
+  approvedBy     Int?           @map("approved_by")
+  rejectionReason String?        @map("rejection_reason") @db.Text
+  isActive        Boolean        @default(true) @map("is_active")
+  lastLoginAt     DateTime?      @map("last_login_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  posts           Post[]
+  pages           Page[]
+  comments        Comment[]
+  likes           Like[]
+  scraps          Scrap[]
+  reports         Report[]         @relation("ReporterReports")
+  notifications    Notification[]
+  sessions        Session[]
+  events          Event[]
+  videos          Video[]
+  approver        User?           @relation("ApprovalHistory", fields: [approvedBy], references: [id])
+  approvedUsers   User[]          @relation("ApprovalHistory")
+  
+  workspaces     WorkspaceMember[]
+  ownedWorkspaces Workspace[]
+  channelMemberships ChannelMember[]
+  messages        Message[]
+  reactions       Reaction[]
+  attachments    Attachment[]
+  messageReads   MessageRead[]
+  conversationParticipants ConversationParticipant[]
+  presence       UserPresence?
+  joinRequests   WorkspaceJoinRequest[]
+  galleries      Gallery[]
+  galleryComments GalleryComment[]
+
+  @@map("users")
+}
+
+model Category {
+  id              Int       @id @default(autoincrement())
+  name            String    @unique @db.VarChar(100)
+  description     String?   @db.Text
+  sortOrder       Int       @default(0) @map("sort_order")
+  isActive        Boolean   @default(true) @map("is_active")
+  readPermission  String    @default("all") @map("read_permission") @db.VarChar(20)
+  writePermission String    @default("member") @map("write_permission") @db.VarChar(20)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  posts           Post[]
+  videos          Video[]
+
+  @@map("categories")
+}
+
+model Post {
+  id           Int       @id @default(autoincrement())
+  title        String    @db.VarChar(255)
+  content      String    @db.Text
+  authorId     Int?      @map("author_id")
+  categoryId   Int       @map("category_id")
+  isNotice     Boolean   @default(false) @map("is_notice")
+  isSecret     Boolean   @default(false) @map("is_secret")
+  viewCount    Int       @default(0) @map("view_count")
+  likeCount    Int       @default(0) @map("like_count")
+  commentCount Int       @default(0) @map("comment_count")
+  status       PostStatus @default(published)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  author       User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category     Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  images       PostImage[]
+  files        PostFile[]
+  comments     Comment[]
+  scraps       Scrap[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([status])
+  @@map("posts")
+}
+
+// 페이지/문서 모델 (노션 스타일)
+model Page {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  icon        String?   @db.VarChar(10)
+  cover       String?   @map("cover_image") @db.VarChar(500)
+  content     Json?     @db.JsonB
+  parentId    Int?      @map("parent_id")
+  authorId    Int?      @map("author_id")
+  isPublic    Boolean   @default(true) @map("is_public")
+  isArchived  Boolean   @default(false) @map("is_archived")
+  spaceType   SpaceType @default(personal) @map("space_type")
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  parent      Page?     @relation("PageHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Page[]    @relation("PageHierarchy")
+  blocks      Block[]
+
+  @@index([parentId])
+  @@index([authorId])
+  @@map("pages")
+}
+
+// 블록 모델 (노션 핵심)
+model Block {
+  id          Int       @id @default(autoincrement())
+  pageId      Int       @map("page_id")
+  parentId    Int?      @map("parent_id")
+  type        String    @db.VarChar(50)
+  content     Json      @db.JsonB
+  properties  Json?     @map("properties") @db.JsonB
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  page        Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  parent      Block?    @relation("BlockChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Block[]   @relation("BlockChildren")
+
+  @@index([pageId])
+  @@index([parentId])
+  @@map("blocks")
+}
+
+model PostImage {
+  id        Int      @id @default(autoincrement())
+  postId    Int      @map("post_id")
+  imageUrl  String   @map("image_url") @db.VarChar(500)
+  fileName  String?  @map("file_name") @db.VarChar(255)
+  fileSize  Int?     @map("file_size")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_images")
+}
+
+model PostFile {
+  id          Int      @id @default(autoincrement())
+  postId      Int      @map("post_id")
+  fileUrl     String   @map("file_url") @db.VarChar(500)
+  fileName    String   @map("file_name") @db.VarChar(255)
+  originalName String  @map("original_name") @db.VarChar(255)
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type") @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_files")
+}
+
+model Comment {
+  id         Int       @id @default(autoincrement())
+  postId     Int       @map("post_id")
+  authorId   Int?      @map("author_id")
+  parentId   Int?      @map("parent_id")
+  content    String    @db.Text
+  likeCount  Int       @default(0) @map("like_count")
+  isDeleted  Boolean   @default(false) @map("is_deleted")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author     User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model Like {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  targetType  String   @map("target_type") @db.VarChar(20)
+  targetId    Int      @map("target_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+  @@map("likes")
+}
+
+model Scrap {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("scraps")
+}
+
+model Report {
+  id          Int          @id @default(autoincrement())
+  reporterId  Int?         @map("reporter_id")
+  targetType  String       @map("target_type") @db.VarChar(20)
+  targetId    Int          @map("target_id")
+  reason      String       @db.Text
+  status      ReportStatus @default(pending)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  resolvedAt  DateTime?    @map("resolved_at")
+
+  reporter    User?        @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@map("reports")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  type       String   @db.VarChar(50)
+  title      String   @db.VarChar(255)
+  content    String?  @db.Text
+  relatedId  Int?     @map("related_id")
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  refreshToken String   @map("refresh_token") @db.VarChar(500)
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Event {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  allDay      Boolean   @default(false) @map("all_day")
+  color       String?   @db.VarChar(20)
+  authorId    Int?      @map("author_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([authorId])
+  @@index([startDate])
+  @@map("events")
+}
+
+model Video {
+  id           Int         @id @default(autoincrement())
+  title        String      @db.VarChar(255)
+  description  String?     @db.Text
+  videoType    VideoType
+  videoUrl     String      @map("video_url") @db.VarChar(500)
+  thumbnailUrl String?     @map("thumbnail_url") @db.VarChar(500)
+  duration     Int?        @map("duration")
+  categoryId   Int?        @map("category_id")
+  authorId     Int         @map("author_id")
+  viewCount    Int         @default(0) @map("view_count")
+  status       VideoStatus @default(published)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  author       User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([videoType])
+  @@index([status])
+  @@map("videos")
+}
+
+enum Role {
+  member
+  moderator
+  admin
+}
+
+enum MemberStatus {
+  pending
+  approved
+  rejected
+}
+
+enum MemberLevel {
+  regular
+  general
+  nonmember
+}
+
+enum PostStatus {
+  published
+  draft
+  hidden
+}
+
+enum ReportStatus {
+  pending
+  resolved
+  rejected
+}
+
+enum VideoType {
+  local
+  external
+}
+
+enum VideoStatus {
+  published
+  hidden
+  draft
+}
+
+enum ChannelType {
+  public
+  private
+  dm
+}
+
+enum ChannelMemberRole {
+  owner
+  admin
+  member
+}
+
+enum MessageType {
+  text
+  file
+  image
+  video
+  system
+}
+
+enum ConversationType {
+  dm
+  group
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+  guest
+}
+
+enum PresenceStatus {
+  online
+  away
+  busy
+  offline
+}
+
+model Workspace {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  icon        String?   @db.VarChar(500)
+  isPublic    Boolean   @default(true) @map("is_public")
+  ownerId     Int       @map("owner_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  owner           User                  @relation(fields: [ownerId], references: [id])
+  channels        Channel[]
+  members         WorkspaceMember[]
+  joinRequests    WorkspaceJoinRequest[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceJoinRequest {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int       @map("workspace_id")
+  userId      Int       @map("user_id")
+  status      String    @default("pending") @db.VarChar(20)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_join_requests")
+}
+
+model WorkspaceMember {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int       @map("workspace_id")
+  userId      Int       @map("user_id")
+  role        MemberRole @default(member)
+  joinedAt    DateTime  @default(now()) @map("joined_at")
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model Channel {
+  id          Int         @id @default(autoincrement())
+  workspaceId Int         @map("workspace_id")
+  name        String      @db.VarChar(100)
+  description String?     @db.Text
+  type        ChannelType @default(public)
+  topic       String?     @db.VarChar(500)
+  isArchived  Boolean     @default(false) @map("is_archived")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  members    ChannelMember[]
+
+  @@unique([workspaceId, name])
+  @@map("channels")
+}
+
+model ChannelMember {
+  id        Int               @id @default(autoincrement())
+  channelId Int               @map("channel_id")
+  userId    Int               @map("user_id")
+  role      ChannelMemberRole @default(member)
+  joinedAt  DateTime          @default(now()) @map("joined_at")
+  lastReadAt DateTime?       @map("last_read_at")
+
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@map("channel_members")
+}
+
+model Message {
+  id          Int         @id @default(autoincrement())
+  channelId   Int?        @map("channel_id")
+  conversationId Int?      @map("conversation_id")
+  authorId    Int         @map("author_id")
+  parentId    Int?        @map("parent_id")
+  content     String      @db.Text
+  type        MessageType @default(text)
+  isEdited    Boolean     @default(false) @map("is_edited")
+  isDeleted   Boolean     @default(false) @map("is_deleted")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  channel     Channel?    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorId], references: [id])
+  parent      Message?    @relation("ThreadMessages", fields: [parentId], references: [id])
+  replies     Message[]   @relation("ThreadMessages")
+  reactions   Reaction[]
+  attachments Attachment[]
+  reads       MessageRead[]
+
+  @@index([channelId, createdAt])
+  @@map("messages")
+}
+
+model Reaction {
+  id        Int       @id @default(autoincrement())
+  messageId Int       @map("message_id")
+  userId    Int       @map("user_id")
+  emoji     String    @db.VarChar(50)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("reactions")
+}
+
+model Attachment {
+  id           Int       @id @default(autoincrement())
+  messageId    Int       @map("message_id")
+  uploaderId   Int       @map("uploader_id")
+  filename     String    @db.VarChar(255)
+  originalName String    @map("original_name") @db.VarChar(255)
+  mimeType     String    @map("mime_type") @db.VarChar(100)
+  size         Int
+  url          String    @db.VarChar(500)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploader    User      @relation(fields: [uploaderId], references: [id])
+
+  @@map("attachments")
+}
+
+model MessageRead {
+  id        Int       @id @default(autoincrement())
+  messageId Int       @map("message_id")
+  userId    Int       @map("user_id")
+  readAt    DateTime  @default(now()) @map("read_at")
+
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@map("message_reads")
+}
+
+model Conversation {
+  id          Int              @id @default(autoincrement())
+  type        ConversationType @default(dm)
+  name        String?          @db.VarChar(100)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id              Int       @id @default(autoincrement())
+  conversationId  Int       @map("conversation_id")
+  userId          Int       @map("user_id")
+  role            ChannelMemberRole @default(member)
+  lastReadAt      DateTime? @map("last_read_at")
+  joinedAt        DateTime  @default(now()) @map("joined_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model UserPresence {
+  id            Int            @id @default(autoincrement())
+  userId        Int            @unique @map("user_id")
+  status        PresenceStatus @default(offline)
+  lastActiveAt  DateTime       @default(now()) @map("last_active_at")
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_presences")
+}
+
+enum SpaceType {
+  task
+  personal
+}
+
+/// 시스템 전역 설정을 관리하기 위한 모델
+/// 사이트 명칭, 점검 모드, 약관 등 핵심 메타데이터를 key-value 구조로 저장합니다.
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  /// 설정 식별 키 (예: site_name, maintenance_mode)
+  key       String   @unique @db.VarChar(100)
+  /// 설정 데이터 값 (텍스트 또는 JSON 포맷)
+  value     String   @db.Text
+  /// 데이터 타입 구분 (string, boolean, json)
+  type      String   @default("string") @db.VarChar(20)
+  /// 최종 수정 일시
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+/// 사진첩 게시글 모델
+model Gallery {
+  id          Int            @id @default(autoincrement())
+  title       String         @db.VarChar(200)
+  content     String?        @db.Text
+  authorId    Int            @map("author_id")
+  author      User           @relation(fields: [authorId], references: [id])
+  images      GalleryImage[]
+  comments    GalleryComment[]
+  likeCount   Int            @default(0) @map("like_count")
+  viewCount   Int            @default(0) @map("view_count")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@map("galleries")
+}
+
+/// 사진첩 상세 이미지 모델
+model GalleryImage {
+  id        Int      @id @default(autoincrement())
+  galleryId Int      @map("gallery_id")
+  gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  imageUrl  String   @map("image_url") @db.Text
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("gallery_images")
+}
+
+/// 사진첩 댓글 모델
+model GalleryComment {
+  id        Int      @id @default(autoincrement())
+  galleryId Int      @map("gallery_id")
+  gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  authorId  Int      @map("author_id")
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("gallery_comments")
+}
+
