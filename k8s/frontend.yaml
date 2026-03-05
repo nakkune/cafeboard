@@ -21,8 +21,8 @@ spec:
         ports:
         - containerPort: 80 # Nginx 기본 포트
         env:
-        - name: VITE_API_URL # 프론트엔드에서 백엔드를 찾는 주소 (고정된 NodePort 사용)
-          value: "http://localhost:30031"
+        - name: VITE_API_URL
+          value: "http://172.19.92.78:30031" # localhost 대신 172.19.92.78 사용
 ---
 apiVersion: v1
 kind: Service
