@@ -58,6 +58,8 @@ services:
     volumes:
       - ./jenkins_home:/var/jenkins_home # 데이터 보관을 위한 볼륨 매핑
       - /var/run/docker.sock:/var/run/docker.sock # Jenkins 안에서 Docker 명령을 쓰기 위함 (DIND)
+      # WSL2의 K8s 설정 파일을 Jenkins 내부로 연결 (출입증 전달)
+      - ~/.kube/config:/root/.kube/config:ro
     restart: unless-stopped
     environment:
       - TZ=Asia/Seoul # 시간대 설정
