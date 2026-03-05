@@ -2,13 +2,30 @@ FROM jenkins/jenkins:lts-jdk17
 
 USER root
 
-# 도커 CLI 및 Compose 플러그인 설치
+# 필수 패키지 및 도구 설치
 RUN apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
-    apt-get update && \
-    apt-get install -y docker-ce-cli docker-compose-plugin && \
+    apt-get install -y curl ca-certificates && \
+    
+    # 1. Docker CLI 설치 (바이너리 다운로드)
+    curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz | tar xvz && \
+    mv docker/docker /usr/local/bin/ && \
+    rm -rf docker/ && \
+    
+    # 2. Docker Compose V2 설치 (플러그인 방식)
+    mkdir -p /usr/local/lib/docker/cli-plugins && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
+    # 심볼릭 링크를 생성하여 'docker-compose' 명령어도 사용 가능하게 함
+    ln -s /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose && \
+    
+    # 3. kubectl 설치 (최신 안정 버전)
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/ && \
+    
+    # 캐시 정리
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# USER jenkins (추후 보안을 위해 전환을 고민해 보세요)
+# 권한 유지를 위해 root 사용자 유지 (학습 및 DIND 목적)
+USER root
