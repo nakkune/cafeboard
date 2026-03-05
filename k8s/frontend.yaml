@@ -22,7 +22,7 @@ spec:
         - containerPort: 80 # Nginx 기본 포트
         env:
         - name: VITE_API_URL
-          value: "http://172.19.92.78:30031" # localhost 대신 172.19.92.78 사용
+          value: "http://localhost:30031" # 다시 localhost로 원복 (CORS 허용 목록 대응)
 ---
 apiVersion: v1
 kind: Service
