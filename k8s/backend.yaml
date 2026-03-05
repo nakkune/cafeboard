@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cafeboard-backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: cafeboard-backend:latest # Jenkins에서 빌드할 이미지 명칭
+        imagePullPolicy: IfNotPresent # 로컬 이미지를 우선 사용하도록 설정
+        ports:
+        - containerPort: 5000 # 백엔드 포트 (애플리케이션 설정에 맞게 수정)
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://user:password@cafeboard-db:5432/cafeboard?schema=public"
+        - name: NODE_ENV
+          value: "production"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: ClusterIP # 내부 통신 전용
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000

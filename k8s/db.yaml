@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi # 학습용으로 1GB면 충분합니다.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cafeboard-db
+spec:
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: db
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: "user"
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        - name: POSTGRES_DB
+          value: "cafeboard"
+        volumeMounts:
+        - name: db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cafeboard-db
+spec:
+  selector:
+    app: db
+  ports:
+  - port: 5432
