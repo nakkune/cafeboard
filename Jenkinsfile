@@ -35,12 +35,12 @@ pipeline {
 
         stage('Step 4: Import Images to K3s') {
             steps {
-                echo '🚚 이미지를 K3s가 인식할 수 있도록 처리합니다.'
+                echo '🚚 빌드된 이미지를 K3s 노드 내부로 전송합니다.'
                 // K3s는 로컬 도커와 이미지 저장소가 다를 수 있어서, 수동으로 로드해주는 과정이 필요할 수 있습니다.
                 // 만약 K3s가 Docker를 직접 사용하지 않는다면 아래 과정을 거쳐야 합니다.
-                //sh 'docker save cafeboard-backend:latest | k3s ctr images import -'
-                //sh 'docker save cafeboard-frontend:latest | k3s ctr images import -'
-                echo '이 단계는 K8s Manifest의 imagePullPolicy: IfNotPresent 설정으로 대체합니다.'
+                // 도커에서 이미지를 파일로 뽑아서 k3s 내부 저장소로 밀어 넣습니다.
+                sh 'docker save cafeboard-backend:latest | k3s ctr images import -'
+                sh 'docker save cafeboard-frontend:latest | k3s ctr images import -'
             }
         }
 
