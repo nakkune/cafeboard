@@ -43,5 +43,26 @@ services:
     depends_on:
       - backend
 
+  # ─── Jenkins 추가 ────────────────────────────────────
+  jenkins:
+    #image: jenkins/jenkins:lts-jdk17 # LTS 버전 사용, 최신 Java 17 기반
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: jenkins-local
+    privileged: true
+    user: root # 학습 편의를 위해 root 권한 부여 (실운영시에는 보안 설정 필요)
+    ports:
+      - "8080:8080" # Jenkins 웹 UI 접속 포트
+      - "50000:50000" # 에이전트 연결용 포트
+    volumes:
+      - ./jenkins_home:/var/jenkins_home # 데이터 보관을 위한 볼륨 매핑
+      - /var/run/docker.sock:/var/run/docker.sock # Jenkins 안에서 Docker 명령을 쓰기 위함 (DIND)
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Seoul # 시간대 설정
+
+# ─── 볼륨 ───────────────────────────────────────────────      
+
 volumes:
   postgres_data:

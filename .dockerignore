@@ -1,0 +1,9 @@
+# Jenkins 데이터 폴더 제외 (가장 중요!)
+jenkins_home/
+
+# 기타 불필요한 폴더들 (빌드 속도 향상)
+node_modules/
+.git/
+.next/
+dist/
+*.log

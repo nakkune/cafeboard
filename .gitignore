@@ -51,3 +51,7 @@ frontend/uploads/
 # 7. Prisma 및 DB 관련
 /backend/prisma/*.db
 /backend/prisma/*.db-journal
+
+# Jenkins Local Data
+jenkins_home/
+
