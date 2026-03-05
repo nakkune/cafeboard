@@ -19,7 +19,7 @@ spec:
         image: cafeboard-backend:latest # Jenkins에서 빌드할 이미지 명칭
         imagePullPolicy: IfNotPresent # 로컬 이미지를 우선 사용하도록 설정
         ports:
-        - containerPort: 5000 # 백엔드 포트 (애플리케이션 설정에 맞게 수정)
+        - containerPort: 3001 # 5000에서 3001로 수정
         env:
         - name: DATABASE_URL
           value: "postgresql://user:password@cafeboard-db:5432/cafeboard?schema=public"
@@ -36,5 +36,5 @@ spec:
     app: backend
   ports:
   - protocol: TCP
-    port: 5000
-    targetPort: 5000
+    port: 3001 # 외부에서 3001로 접근
+    targetPort: 3001 # 컨테이너 내부 3001로 전달
