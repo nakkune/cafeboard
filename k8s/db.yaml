@@ -47,7 +47,10 @@ kind: Service
 metadata:
   name: cafeboard-db
 spec:
+  type: NodePort # 외부 접속 가능하도록 NodePort로 변경
   selector:
     app: db
   ports:
   - port: 5432
+    targetPort: 5432
+    nodePort: 30543 # DBeaver에서 접속할 고정 포트 번호
