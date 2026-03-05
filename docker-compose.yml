@@ -52,14 +52,16 @@ services:
     container_name: jenkins-local
     privileged: true
     user: root # 학습 편의를 위해 root 권한 부여 (실운영시에는 보안 설정 필요)
-    ports:
-      - "8080:8080" # Jenkins 웹 UI 접속 포트
-      - "50000:50000" # 에이전트 연결용 포트
+    # network_mode: "host" 를 추가합니다. (매우 중요)
+    network_mode: "host"
+    # ports는 주석 처리합니다. (호스트 모드에서는 무시됨)
+    # ports:
+    #   - "8080:8080"
+    #   - "50000:50000"
     volumes:
       - ./jenkins_home:/var/jenkins_home # 데이터 보관을 위한 볼륨 매핑
       - /var/run/docker.sock:/var/run/docker.sock # Jenkins 안에서 Docker 명령을 쓰기 위함 (DIND)
-      # WSL2의 K8s 설정 파일을 Jenkins 내부로 연결 (출입증 전달)
-      - ~/.kube/config:/root/.kube/config:ro
+      - ~/.kube/config:/root/.kube/config:ro # WSL2의 K8s 설정 파일을 Jenkins 내부로 연결 (출입증 전달)
     restart: unless-stopped
     environment:
       - TZ=Asia/Seoul # 시간대 설정
