@@ -31,7 +31,7 @@ kind: Service
 metadata:
   name: backend-service
 spec:
-  type: ClusterIP # 내부 통신 전용
+  type: LoadBalancer # ClusterIP에서 LoadBalancer로 변경
   selector:
     app: backend
   ports:
