@@ -31,10 +31,11 @@ kind: Service
 metadata:
   name: backend-service
 spec:
-  type: LoadBalancer # ClusterIP에서 LoadBalancer로 변경
+  type: NodePort # LoadBalancer에서 NodePort로 변경
   selector:
     app: backend
   ports:
   - protocol: TCP
     port: 3001 # 외부에서 3001로 접근
     targetPort: 3001 # 컨테이너 내부 3001로 전달
+    nodePort: 30031 # 외부에서 접속할 고정 포트 30031 지정

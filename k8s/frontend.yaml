@@ -21,18 +21,19 @@ spec:
         ports:
         - containerPort: 80 # Nginx 기본 포트
         env:
-        - name: VITE_API_URL # 프론트엔드에서 백엔드를 찾는 주소
-          value: "http://localhost:3001" # 5000에서 3001로 수정
+        - name: VITE_API_URL # 프론트엔드에서 백엔드를 찾는 주소 (고정된 NodePort 사용)
+          value: "http://localhost:30031"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
 spec:
-  type: LoadBalancer # K3s의 ServiceLB를 사용하여 외부 노출
+  type: NodePort # LoadBalancer에서 NodePort로 변경
   selector:
     app: frontend
   ports:
   - protocol: TCP
-    port: 80 # 브라우저에서 접속할 포트
+    port: 80 # 브라우저 내부용 포트
     targetPort: 80
+    nodePort: 30080 # 외부에서 접속할 고정 포트 30080 지정
