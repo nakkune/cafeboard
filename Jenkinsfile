@@ -4,6 +4,9 @@ pipeline {
     environment {
         // 빌드 번호를 활용한 이미지 관리 (필요 시 활용)
         BUILD_TAG = "build-${env.BUILD_NUMBER}"
+        // 호스트에서 기본적으로 사용하는 프로젝트 폴더 이름(보통 cafeboard)으로 고정합니다.
+        // 현재 폴더 이름이 cafeboard라면 아래와 같이 설정하세요.
+        COMPOSE_PROJECT_NAME = "cafeboard"
     }
 
     stages {
@@ -33,8 +36,8 @@ pipeline {
         stage('Step 4: Deploy To Local') {
             steps {
                 echo '🚀 빌드된 서비스를 배포(재시작)합니다.'
-                // -d 옵션으로 백그라운드 실행하며, 지정된 서비스만 갱신합니다.
-                sh 'docker compose up -d backend frontend'
+                // -p 옵션을 사용하여 프로젝트 이름을 수동으로 지정합니다.
+                sh 'docker compose -p cafeboard up -d backend frontend'
             }
         }
 
