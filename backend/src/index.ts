@@ -56,12 +56,6 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(cors({
   origin: [
-    'http://211.215.96.11:5173',
-    'http://211.215.96.11:5174',
-    'http://211.215.96.11:80',
-    'http://211.215.96.11:3001',
-    'http://211.215.96.11:3002',
-    'http://211.215.96.11:3003',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:80',
