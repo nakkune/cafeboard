@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cafeboard"]
       interval: 5s
@@ -27,6 +28,7 @@ services:
       - ./backend/.env.docker
     ports:
       - "3001:3001"
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,35 +42,26 @@ services:
     container_name: cafeboard-frontend
     ports:
       - "80:80"
+    restart: always
     depends_on:
       - backend
 
-  # ─── Jenkins 추가 ────────────────────────────────────
+  # ─── Jenkins ──────────────────────────────────────────
   jenkins:
-    #image: jenkins/jenkins:lts-jdk17 # LTS 버전 사용, 최신 Java 17 기반
     build:
       context: .
       dockerfile: Dockerfile.jenkins
     container_name: jenkins-local
     privileged: true
-    user: root # 학습 편의를 위해 root 권한 부여 (실운영시에는 보안 설정 필요)
-    # network_mode: "host" 를 추가합니다. (매우 중요)
+    user: root
     network_mode: "host"
-    # ports는 주석 처리합니다. (호스트 모드에서는 무시됨)
-    # ports:
-    #   - "8080:8080"
-    #   - "50000:50000"
+    restart: always
     volumes:
-      - ./jenkins_home:/var/jenkins_home # 데이터 보관을 위한 볼륨 매핑
-      - /var/run/docker.sock:/var/run/docker.sock # Jenkins 안에서 Docker 명령을 쓰기 위함 (DIND)
-      - ~/.kube/config:/root/.kube/config:ro # WSL2의 K8s 설정 파일을 Jenkins 내부로 연결 (출입증 전달)
-      - /usr/local/bin/k3s:/usr/local/bin/k3s:ro # 호스트의 k3s 바이너리를 Jenkins 내부로 전달 (매우 중요)
-      - /run/k3s/containerd/containerd.sock:/run/k3s/containerd/containerd.sock # K3s containerd 소켓 연결
-    restart: unless-stopped
+      - ./jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - TZ=Asia/Seoul # 시간대 설정
+      - TZ=Asia/Seoul
 
 # ─── 볼륨 ───────────────────────────────────────────────      
-
 volumes:
   postgres_data:
