@@ -1,0 +1,17 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+    container_name: cafeboard-frontend
+    ports:
+      - "127.0.0.1:8090:80"
+    restart: always
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    external: true

@@ -1,0 +1,17 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cafeboard-backend
+    env_file:
+      - ./backend/.env.docker
+    ports:
+      - "127.0.0.1:3001:3001"
+    restart: always
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    external: true

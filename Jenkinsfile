@@ -27,7 +27,7 @@ pipeline {
                 echo '🛠️ backend와 frontend Docker 이미지를 빌드하고 서비스를 갱신합니다.'
                 //--build 옵션을 통해 변경된 소스가 반영되도록 하며, -d로 데몬 실행합니다.
                 // 젠킨스 자기 자신을 건드리지 않도록 명시적으로 배포 대상을 지정합니다.
-                sh 'docker compose up -d --build postgres backend frontend'
+                sh 'docker compose up -d --build backend frontend'
             }
         }
 
