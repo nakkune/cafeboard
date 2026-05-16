@@ -13,6 +13,7 @@ out/
 
 # 3. 환경 변수 및 비밀키 (Environment / Secrets)
 .env
+.env.docker
 .env.local
 .env.development.local
 .env.test.local
