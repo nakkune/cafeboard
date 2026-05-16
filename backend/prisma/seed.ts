@@ -40,7 +40,7 @@ async function main() {
   console.log('✅ 카테고리 생성 완료');
 
   // 관리자 계정 생성
-  const adminPassword = await hashPassword('admin123');
+  const adminPassword = await hashPassword('1q@W3e4r5t');
   await prisma.user.upsert({
     where: { email: 'admin@cafeboard.com' },
     update: { memberStatus: 'approved', memberLevel: 'regular' },
@@ -53,7 +53,7 @@ async function main() {
       memberLevel: 'regular',
     },
   });
-  console.log('✅ 관리자 계정 생성 완료 (admin@cafeboard.com / admin123)');
+  console.log('✅ 관리자 계정 생성 완료 (admin@cafeboard.com )');
 
   // 샘플 게시글 생성
   const admin = await prisma.user.findUnique({
