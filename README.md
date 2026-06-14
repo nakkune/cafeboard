@@ -40,7 +40,6 @@ cafeboard/
 ├── backend/          # Node.js + Express + Prisma + Socket.io
 ├── frontend/         # React + Vite + Zustand + Tailwind CSS
 ├── .github/          # CI/CD (GitHub Actions) 설정
-├── k8s/              # Kubernetes 배포 매니페스트 (PostgreSQL 등)
 ├── docker-compose.yml # 컨테이너 오케스트레이션 설정
 └── PRD.md            # 상세 제품 요구사항 문서
 ```
